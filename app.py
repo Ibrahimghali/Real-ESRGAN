@@ -5,6 +5,24 @@ import io
 from RealESRGAN import RealESRGAN
 import os
 
+# In your load_model function
+@st.cache_resource
+def load_model():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = RealESRGAN(device, scale=4)
+    
+    # Check if weights file exists locally first
+    weights_path = 'weights/RealESRGAN_x4.pth'
+    if os.path.exists(weights_path):
+        st.write("Using locally stored model weights")
+        model.load_weights(weights_path, download=False)
+    else:
+        st.write("Downloading model weights (first run only)")
+        os.makedirs('weights', exist_ok=True)
+        model.load_weights(weights_path, download=True)
+    
+    return model
+
 def main():
     # Set page title and description
     st.set_page_config(page_title="Real-ESRGAN Image Enhancer", layout="wide")
@@ -40,10 +58,8 @@ def main():
             # Show spinner while processing
             with st.spinner("Enhancing image... This may take a few seconds."):
                 try:
-                    # Initialize model
-                    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-                    model = RealESRGAN(device, scale=4)
-                    model.load_weights('weights/RealESRGAN_x4.pth', download=True)
+                    # Load model
+                    model = load_model()
                     
                     # Process image
                     sr_image = model.predict(image)
